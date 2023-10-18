@@ -1,0 +1,49 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace cvKeyboardTest
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            using (Mat image = new Mat(200, 300, MatType.CV_8U, new Scalar(255)))
+            {
+                Cv2.NamedWindow("마우스 이벤트", WindowFlags.AutoSize);
+                Cv2.ImShow("마우스 이벤트", image);
+                MouseCallback cvm = new MouseCallback(Event);
+                Cv2.SetMouseCallback("마우스 이벤트", cvm, image.CvPtr);
+                Cv2.WaitKey();
+                Cv2.DestroyAllWindows();
+            }
+        }
+        static void Event(MouseEventTypes @event,int x,int y,MouseEventFlags flags,IntPtr userdata)
+        {
+            Mat data = new Mat(userdata);
+
+            switch (@event)
+            {
+                case MouseEventTypes.LButtonDoubleClick:
+                    Console.WriteLine("마우스 왼쪽 더블 클릭");
+                    break;
+                case MouseEventTypes.LButtonDown:
+                    Console.WriteLine("왼쪽 마우스 누름");
+                    break;
+                case MouseEventTypes.RButtonDown:
+                    Console.WriteLine("오른쪽 마우스 누름");
+                    break;
+                case MouseEventTypes.LButtonUp:
+                    Console.WriteLine("왼쪽 마우스 떼기");
+                    break;
+                case MouseEventTypes.RButtonUp:
+                    Console.WriteLine("오른쪽 마우스 떼기");
+                    break;
+            }
+        }
+    }
+}
