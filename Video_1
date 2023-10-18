@@ -1,0 +1,36 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using OpenCvSharp;
+namespace ExTest03
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            string path = "C:\\Users\\Admin\\Downloads\\vtest.avi";
+            VideoCapture capute = new VideoCapture(0);
+            capute.Set(VideoCaptureProperties.FrameWidth, 320);
+            capute.Set(VideoCaptureProperties.FrameHeight, 320);
+
+            Mat frame = new Mat();
+            while(true)
+            {
+                //if (capute.PosFrames == capute.FrameCount)
+                //    capute.Open(path);
+                if (capute.IsOpened() == true)
+                {
+                    capute.Read(frame);
+                    Cv2.ImShow("videoframe", frame);
+
+                    if (Cv2.WaitKey(33) == 'q')
+                        break;
+                }
+            }
+            capute.Release();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
