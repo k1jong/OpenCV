@@ -1,0 +1,31 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Schema;
+using OpenCvSharp;
+namespace ExTest03
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            //Mat img = new Mat(new Size(640, 480), MatType.CV_8UC3);
+            Mat img = Cv2.ImRead("C:\\Users\\Admin\\Desktop\\다운로드.jpg");
+            bool save;
+
+            ImageEncodingParam[] prms = new ImageEncodingParam[]
+            {
+                new ImageEncodingParam(ImwriteFlags.JpegQuality,100),
+                new ImageEncodingParam(ImwriteFlags.JpegProgressive,1)
+            };
+            save = Cv2.ImWrite("CV.jpeg", img, prms);
+            
+            Console.WriteLine(save);
+        }
+    }
+}
