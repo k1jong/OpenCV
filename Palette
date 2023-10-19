@@ -1,0 +1,32 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Schema;
+using OpenCvSharp;
+namespace ExTest03
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            int val = 0;
+            Cv2.NamedWindow("Palette");
+            Cv2.CreateTrackbar("Color", "Palette", ref val, 255);
+            while(true)
+            {
+                int pixel = Cv2.GetTrackbarPos("Color", "Palette");
+                Mat src = new Mat(new Size(500, 500), MatType.CV_8UC3, new Scalar(pixel, val, val));
+
+                Cv2.ImShow("Palette", src);
+                if (Cv2.WaitKeyEx(33) == 'q') break;
+            }
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
