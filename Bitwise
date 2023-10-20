@@ -1,0 +1,42 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConsoleApp8
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Mat img1 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            Mat img2 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            Mat img3 = new Mat();
+
+            Point center = new Point(img1.Width / 2, img1.Height/2);
+
+            Cv2.Circle(img1,center,80,Scalar.All(255),-1);
+            Cv2.Rectangle(img2,new Point(0,0),new Point(125,250),Scalar.All(255),-1);
+
+            Cv2.BitwiseXor(img1, img2, img3);
+
+            Mat img4 = new Mat();
+            Cv2.BitwiseAnd(img1,img2,img4);
+
+
+            Cv2.ImShow("img1", img1);
+            Cv2.ImShow("img2", img2);
+            Cv2.ImShow("img3", img3);
+            Cv2.ImShow("img4", img4);
+
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+
+        }
+    }
+}
