@@ -1,0 +1,79 @@
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Camera
+{
+    public partial class Form1 : Form
+    {
+        VideoCapture cap;
+        Mat frame;
+        private bool isRunning = false;
+        private bool isColor = true;
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            isColor = false;
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            cap = new VideoCapture(0);
+            frame = new Mat();
+            cap.Set(VideoCaptureProperties.FrameHeight, 480);
+            cap.Set(VideoCaptureProperties.FrameWidth, 640);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            isColor = true;
+        }
+
+        private async void button1_Click(object sender, EventArgs e)
+        {
+            if (isRunning)
+            {
+                isRunning = false;
+                button1.Text = "시작";
+                return;
+            }
+            button1.Text = "정지";
+            isRunning = true;
+
+            while (isRunning)
+            {
+                if (cap.IsOpened())
+                {
+                    cap.Read(frame);
+                    if (!isColor)
+                    {
+                        Cv2.CvtColor(frame, frame, ColorConversionCodes.BGR2GRAY);
+                        Cv2.CvtColor(frame,frame, ColorConversionCodes.GRAY2BGR);
+                    }
+                    Cv2.Flip(frame,frame,FlipMode.Y);
+                    pictureBox1.Image = BitmapConverter.ToBitmap(frame);
+                }
+                await Task.Delay(33);
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            isRunning = false;
+            cap.Release();
+            this.Close();
+        }
+    }
+}
