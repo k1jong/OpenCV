@@ -1,0 +1,51 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace GrayScale
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Mat img = new Mat("C:\\Users\\Admin\\Desktop\\img\\bright.jpg",ImreadModes.Grayscale);
+            if (img.Empty())
+            {
+                Console.WriteLine("영상을 읽지 못 했습니다.");
+                Environment.Exit(0);
+            }
+            Mat dst1 = img + 100;
+            Mat dst2 = img - 100;
+            Mat dst3 = 255 - img;
+            Mat dst4 = new Mat(img.Size(), img.Type(), Scalar.All(255)) - img;
+            Mat dst5 = new Mat(img.Size(), img.Type());
+            Mat dst6 = new Mat(img.Size(), img.Type());
+
+            for(int i = 0; i < img.Rows; i++)
+            {
+                for(int j = 0; j < img.Cols; j++)
+                {
+                    dst5.At<byte>(i, j) = (byte)(Math.Min(img.At<byte>(i, j) + 100, 255));
+                    dst6.At<byte>(i,j)=(byte)(255-img.At<byte>(i, j));
+                }
+            }
+
+            Cv2.ImShow("img", img);
+            Cv2.ImShow("dst1", dst1);
+            Cv2.ImShow("dst2", dst2);
+            Cv2.ImShow("dst3", dst3);
+            Cv2.ImShow("dst4", dst4);
+            Cv2.ImShow("dst5", dst5);
+            Cv2.ImShow("dst6", dst6);
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
