@@ -1,0 +1,40 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace GrayScale
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Mat img = new Mat("C:\\Users\\Admin\\Desktop\\img\\pixel_test.jpg",ImreadModes.Grayscale);
+            if (img.Empty())
+            {
+                Console.WriteLine("이미지를 못 읽었어요");
+                Environment.Exit(0);
+            }
+            Rect roi = new Rect(135,95,20,15);
+            Mat roi_img = img.SubMat(roi);
+            Console.WriteLine("[roi_img] =");
+            for(int i = 0; i < roi_img.Rows; i++)
+            {
+                for(int j=0;j<roi_img.Cols; j++)
+                {
+                    Console.Write($"{roi_img.At<byte>(i, j),5}");
+                }
+                Console.WriteLine();
+            }
+            img.Rectangle(roi, Scalar.White, 1);
+            Cv2.ImShow("img", img);
+            Cv2.ImShow("roi_img", roi_img);
+            Cv2.WaitKey();
+        }
+    }
+}
