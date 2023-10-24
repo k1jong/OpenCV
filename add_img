@@ -1,0 +1,44 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace GrayScale
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Mat img1 = new Mat("C:\\Users\\Admin\\Desktop\\img\\add1.jpg",ImreadModes.Grayscale);
+            Mat img2 = new Mat("C:\\Users\\Admin\\Desktop\\img\\add2.jpg",ImreadModes.Grayscale);
+
+            double alpah = 0.6;
+            double beat = 0.7;
+
+            Mat add_img = img1 + img2;
+            Mat add_img2 = img1 * 0.5 + img2 * 0.5;
+
+            Mat add_img3 = img1 * alpah + img2 * beat;
+
+            Mat add_img4 = new Mat();
+            Cv2.AddWeighted(img1,alpah,img2,beat,0,add_img4);
+
+            //Cv2.ImShow("img1", img1);
+            //Cv2.ImShow("img2", img2);
+            Cv2.ImShow("add_img", add_img);
+            Cv2.ImShow("add_img2", add_img2);
+            Cv2.ImShow("add_img3", add_img3);
+            Cv2.ImShow("add_img4", add_img4);
+
+
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
