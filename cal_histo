@@ -1,0 +1,53 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace histogram
+{
+    internal class Program
+    {
+        static void cal_histo(Mat image, ref Mat hist, int bins, int range_max = 256)
+        {
+            hist = new Mat(bins, 1, MatType.CV_32F, Scalar.All(0));
+            float gap = range_max;
+            for (int i = 0; i < image.Rows; i++)
+            {
+                for (int j = 0; j < image.Cols; j++)
+                {
+                    int idx = (int)(image.At<char>(i, j) / gap);
+                    hist.At<float>(idx)++;
+                }
+            }
+        }
+        static void Main(string[] args)
+        {
+            Mat image = Cv2.ImRead("C:\\Users\\Admin\\Desktop\\img\\pixel_test.jpg", ImreadModes.Grayscale);
+            Mat hist = new Mat();
+            if (image.Empty())
+            {
+                Console.WriteLine("이미지 오류");
+                Environment.Exit(0);
+            }
+
+            cal_histo(image, ref hist, 256);
+            for (int i = 0; i < hist.Rows; i++)
+            {
+                Console.Write(hist.At<float>(i) + ", ");
+            }
+            Console.WriteLine();
+
+            Cv2.ImShow("image", image);
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
+
+
+
+// ref: ref 키워드는 메서드에 값을 참조로 전달하려면 해당 변수가 미리 초기화. ref 키워드를 사용하려면 변수에 미리 값이 할당.
+
+// out: out 키워드는 메서드 내에서 해당 변수가 초기화되지 않아도 됨. out 키워드를 사용한 변수는 메서드 내에서 반드시 값을 할당해야 하며, 이전의 값은 모두 무시.
