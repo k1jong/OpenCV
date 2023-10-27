@@ -1,0 +1,112 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace CannyApp
+{
+    internal class Program
+    {
+        static void calc_dir(Mat Gy,Mat Gx,out Mat dir)
+        {
+            dir = new Mat(Gy.Size(), MatType.CV_8U);
+
+            for(int i = 0; i < dir.Rows; i++)
+            {
+                for(int j=0;j<dir.Cols; j++)
+                {
+                    float gx = Gx.At<float>(i, j);
+                    float gy = Gy.At<float>(i, j);
+                    int theat = (int)(Math.Atan2(gy, gx)/ 45);
+                    dir.At<byte>(i, j) = (byte)(theat % 4);
+                }
+            }
+        }
+        static void supp_nonMat(Mat sobel, Mat dir,out Mat dst)
+        {
+            dst = new Mat(sobel.Size(), MatType.CV_32F,new Scalar(0));
+            for(int i=1; i < sobel.Rows - 1; i++)
+            {
+                for(int j=1; j < sobel.Cols - 1; j++)
+                {
+                    int di = dir.At<byte>(i, j);
+                    float v1=0, v2=0;
+                    if (di == 0)
+                    {
+                        v1 = sobel.At<float>(i, j-1);
+                        v2 = sobel.At<float>(i, j + 1);
+                    }
+                    else if (di == 1)
+                    {
+                        v1 = sobel.At<float>(i + 1 , j + 1);
+                        v2 = sobel.At<float>(i - 1, j - 1);
+                    }
+                    else if (di == 2)
+                    {
+                        v1 = sobel.At<float>(i - 1, j );
+                        v2 = sobel.At<float>(i + 1, j );
+                    }
+                    else if (di == 3)
+                    {
+                        v1 = sobel.At<float>(i + 1, j - 1);
+                        v2 = sobel.At<float>(i - 1, j + 1);
+                    }
+
+                    float center = sobel.At<float>(i, j);
+                    dst.At<float>(i,j) = (center>v1 && center > v2) ? center : 0;
+                }
+            }
+        }
+        static void trace(Mat max_so, Mat pos_ck,  Mat hy_img, Point pt , int low)
+        {
+            Rect rect = new Rect(new Point(0, 0), pos_ck.Size());
+            //if (!rect.Contains(pt)) 
+
+            if(pos_ck.At<byte>(pt.X,pt.Y) ==0 && max_so.At<float>(pt.X, pt.Y) > low)
+            {
+                pos_ck.At<byte>(pt.X, pt.Y) = 1;
+                hy_img.At<byte>(pt.X, pt.Y) = 255;
+
+                trace(max_so, pos_ck, hy_img, pt + new Point(-1, -1), low);
+                trace(max_so, pos_ck, hy_img, pt + new Point(0, -1), low);
+                trace(max_so, pos_ck, hy_img, pt + new Point(1, -1), low);
+                trace(max_so, pos_ck, hy_img, pt + new Point(-1, 0), low);
+
+                trace(max_so, pos_ck, hy_img, pt + new Point(1, 0), low); trace(max_so, pos_ck, hy_img, pt + new Point(-1, 1), low); trace(max_so, pos_ck, hy_img, pt + new Point(0, 1), low); trace(max_so, pos_ck, hy_img, pt + new Point(1, 1), low);
+            }
+        }
+        static void Main(string[] args)
+        {
+            Mat img = new Mat("C:\\Users\\Admin\\Desktop\\img\\cannay_tset.jpg",ImreadModes.Grayscale);
+            if (img.Empty())
+            {
+                Console.WriteLine("이미지 주소 오류");
+                Environment.Exit(0);
+            }
+            Mat Gx = new Mat(),Gy = new Mat(),dir,hy_img = new Mat(),canny = new Mat(), gau = new Mat(),max_sobel = new Mat();
+            Cv2.GaussianBlur(img, gau, new Size(5, 5), 0.3);
+            Cv2.Sobel(gau, Gx, MatType.CV_32F, 1, 0, 3);
+            Cv2.Sobel(gau, Gy, MatType.CV_32F, 0, 1, 3);
+            Mat sobel = Cv2.Abs(Gx) + Cv2.Abs(Gy);
+
+
+            calc_dir(Gy, Gx, out dir);
+            supp_nonMat(sobel, dir,out max_sobel);
+
+            Cv2.ConvertScaleAbs(max_sobel, max_sobel);
+
+            //hystersis_th
+            Cv2.Canny(max_sobel, hy_img, 100, 150);
+            Cv2.Canny(img, canny, 100, 150);
+
+            Cv2.ImShow("img", img);
+            Cv2.ImShow("canny", canny);
+            Cv2.ImShow("OpenCV_canny", canny);
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
