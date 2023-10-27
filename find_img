@@ -1,0 +1,180 @@
+using Microsoft.SqlServer.Server;
+using OpenCvSharp;
+using OpenCvSharp.Internal.Util;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Data.SqlTypes;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices.ComTypes;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace histogram
+{
+    internal class Program
+    {
+        static void calc_Histo(Mat img, Mat hist, Vec3i bins, Vec3f range, int dims)
+        {
+            int dimensions = (dims <= 0) ? img.Channels() : dims;
+            int[] channels = { 0, 1, 2 };
+            int[] histSize = { bins.Item0, bins.Item1, bins.Item2 };
+
+            float[] range1 = { 0, range.Item0 };
+            float[] range2 = { 0, range.Item1 };
+            float[] range3 = { 0, range.Item2 };
+            float[][] ranges = { range1, range2, range3 };
+
+            Cv2.CalcHist(new[] { img }, channels, null, hist, dimensions, histSize, ranges);
+            Cv2.Normalize(hist, hist, 0, 1, NormTypes.MinMax);
+        }
+        static Mat draw_histo(Mat hist)
+        {
+            if(hist.Dims !=2)
+            {
+                Console.WriteLine("잘못된 히스토그램");
+                Environment.Exit(0);
+            }
+            float ratio_val = 512f;
+            float ratio_hue = 180f/ hist.Rows;
+            float ratio_sat = 256f/ hist.Cols;
+
+            Mat graph = new Mat(hist.Size(),MatType.CV_8UC3);
+            for(int i = 0; i < hist.Rows; i++)
+            {
+                for(int j=0;j<hist.Cols; j++)
+                {
+                    float val = (float)(hist.Get<float>(i, j) * ratio_val);
+                    float hue = i * ratio_hue;
+                    float sat = j * ratio_sat;
+                    graph.Set(i, j, new Vec3b((byte)hue, (byte)sat, (byte)val));
+                }
+            }
+            Cv2.CvtColor(graph, graph, ColorConversionCodes.HSV2BGR);
+            Cv2.Resize(graph, graph, new Size(0, 0), 10, 10, InterpolationFlags.Linear);
+
+            return graph;
+        }
+        static List<Mat> load_histo(Vec3i bins,Vec3f ranges,int nlmages)
+        {
+            List<Mat> DB_hists = new List<Mat>();
+            for(int i = 0; i < nlmages; i++)
+            {
+                String fname = string.Format("C:\\Users\\Admin\\Desktop\\DB\\img_{0:D2}.jpg", i);
+                if (File.Exists(fname))
+                {
+                    Mat img = new Mat(fname, ImreadModes.Color);
+                    Mat hsv = new Mat(), hist = new Mat();
+                    Cv2.CvtColor(img, hsv, ColorConversionCodes.BGR2HSV);
+                    calc_Histo(hsv, hist, bins, ranges, 2);
+                    DB_hists.Add(hist);
+                }
+            }
+            Console.WriteLine($"{DB_hists.Count}개 파일 로드 및 히스토그램 계산 완료");
+            return DB_hists;
+        }
+        static Mat query_img()
+        {
+            int qNo = 74;
+            do
+            {
+                Console.Write("질의 영상 번호를 입력하세요: ");
+                if (int.TryParse(Console.ReadLine(), out qNo))
+                {
+                    string fname = string.Format("C:\\Users\\Admin\\Desktop\\DB\\img_{0:D2}.jpg", qNo);
+                    if (File.Exists(fname))
+                    {
+                        Mat query = new Mat(fname, ImreadModes.Color);
+                        if (!query.Empty())
+                            return query;
+                    }
+                }
+                Console.WriteLine("질의 영상 번호가 잘못되었습니다.");
+            } while (true);
+        }
+
+        static Mat calc_sim(Mat que_hist,List<Mat> DB_hists)
+        {
+            Mat DBSimilarities = new Mat(DB_hists.Count, 1, MatType.CV_64FC1);
+            int i = 0;
+            foreach (Mat hist in DB_hists)
+            {
+                double compare = Cv2.CompareHist(que_hist, hist, HistCompMethods.Correl);
+                DBSimilarities.Set(i, 0, compare);
+                i++;
+            }
+            return DBSimilarities;
+        }
+
+        static void select_view(double sine,Mat DB_sim, Vec3i bins, Vec3f ranges)
+        {
+            Mat m_idx = new Mat(), sorted_sim = new Mat();
+            Cv2.Sort(DB_sim, sorted_sim, SortFlags.EveryColumn | SortFlags.Descending);
+            Cv2.SortIdx(DB_sim, m_idx, SortFlags.EveryColumn | SortFlags.Descending);
+
+            for(int i = 0; i < sorted_sim.Total(); i++)
+            {
+                double sim = sorted_sim.At<double>(i);
+                if(sim> sine)
+                {
+                    int idx = m_idx.At<int>(i);
+                    string fname = string.Format("C:\\Users\\Admin\\Desktop\\DB\\img_{0:D2}.jpg", idx);
+                    Mat hsv=new Mat(),hist = new Mat(),img = new Mat(fname,ImreadModes.Color);
+                    Cv2.CvtColor(img, hsv, ColorConversionCodes.BGR2HSV);
+                    calc_Histo(img, hist, bins, ranges, 2);
+                    Mat histImg = draw_histo(hist);
+                    Mat tmp = MakeImg(img, histImg);
+                    string title = string.Format("img_{0:D3} - {1:F2}", idx, sim);
+                    Console.WriteLine(title);
+                    Cv2.ImShow(title, img);
+                }
+            }
+
+        }
+        public static Mat MakeImg(Mat img, Mat histImg)
+        {
+            int w = img.Cols + histImg.Cols + 10;
+            int h = Math.Max(img.Rows, histImg.Rows);
+            Mat tmp = new Mat(h, w, MatType.CV_8UC3, new Scalar(255, 255, 255));
+
+            int gap = Math.Abs(img.Rows - histImg.Rows) / 2;
+            Rect r1 = new Rect(new Point(0, 0), img.Size());
+            Rect r2 = new Rect(new Point(img.Cols + 5, gap), histImg.Size());
+
+
+
+            img.CopyTo(tmp[r1]);
+            histImg.CopyTo(tmp[r2]);
+
+            return tmp;
+        }
+
+        public static void Main(string[] args)
+        {
+            Vec3i bins = new Vec3i(30,42,0);
+            Vec3f ranges = new Vec3f(180,256,0);
+            List<Mat> DB_hist = load_histo(bins, ranges, 100);
+            Mat que = query_img();
+
+            Mat hsv = new Mat(), que_hist = new Mat();
+            Cv2.CvtColor(que, hsv, ColorConversionCodes.BGR2HSV);
+            calc_Histo(hsv, que_hist, bins, ranges, 2);
+            
+            Mat hist_img = draw_histo(que_hist);
+            Mat DB_sim = calc_sim(que_hist, DB_hist);
+
+            double slnc;
+            Console.WriteLine("기존 유사도 입력 : ");
+            slnc = Convert.ToDouble(Console.ReadLine());
+
+            select_view(slnc, DB_sim,bins,ranges);
+
+            Cv2.ImShow("image", que);
+            Cv2.ImShow("hist_img", hist_img);
+            Cv2.WaitKey();
+        }
+    }
+}
