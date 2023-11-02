@@ -1,0 +1,108 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Erosion
+{
+    internal class Program
+    {
+        static bool Check_match(Mat img, Point start, Mat mask, bool mode = false)
+        {
+            for(int u=0;u<mask.Rows;u++)
+            {
+                for(int v = 0; v < mask.Cols; v++)
+                {
+                    Point pt = new Point(v, u);
+                    int m = mask.At<byte>(pt.Y,pt.X);
+                    int p = img.At<byte>(start.Y+pt.Y, start.X + pt.X);
+
+                    bool ch = (p == 255);
+                    if(m==1 && ch == mode)
+                        return false;
+                }
+            }
+            return true;
+        }
+        static void dilation(Mat img, out Mat dst,Mat mask)
+        {
+            dst = new Mat(img.Size(), MatType.CV_8U, Scalar.All(0));
+            if(mask.Empty()) mask = new Mat(3,3,MatType.CV_8UC1,Scalar.All(0));
+
+            Point h_m = new Point(mask.Cols/2,mask.Rows/2);
+            for(int i = h_m.Y; i < img.Rows- h_m.Y; i++)
+            {
+                for(int j = h_m.X; j < img.Cols- h_m.X; j++)
+                {
+                    Point start = new Point(j, i) - h_m;
+                    bool check = Check_match(img, start, mask);
+                    dst.Set<byte>(i, j, check ? (byte)0 : (byte)255);
+                }
+            }
+        }
+        static void erosion(Mat img, out Mat dst, Mat mask)
+        {
+            dst = new Mat(img.Size(), MatType.CV_8U, Scalar.All(0));
+            if (mask.Empty()) mask = new Mat(3, 3, MatType.CV_8UC1, Scalar.All(0));
+
+            Point h_m = new Point(mask.Cols / 2, mask.Rows / 2);
+            for (int i = h_m.Y; i < img.Rows - h_m.Y; i++)
+            {
+                for (int j = h_m.X; j < img.Cols - h_m.X; j++)
+                {
+                    Point start = new Point(j, i) - h_m;
+                    bool check = Check_match(img, start, mask, false);
+                    dst.Set<byte>(i, j, check ? (byte)255 : (byte)0);
+                }
+            }
+        }
+        static void Opening(Mat img,out Mat dst,Mat mask)
+        {
+            Mat tmp;
+            erosion(img, out tmp, mask);
+            dilation(tmp,out dst,mask);
+        }
+        static void closing(Mat img, out Mat dst,Mat mask)
+        {
+            Mat tmp;
+            dilation(img, out tmp, mask);
+            erosion(tmp, out dst, mask);
+        }
+        static void Main(string[] args)
+        {
+            while (true)
+            {
+                Console.Write($"차량 영상 번호 입력(0은 종료) : ");
+                int no = int.Parse(Console.ReadLine());
+                if (no == 0) Environment.Exit(0);
+
+                string frame = $"C:\\Users\\Admin\\Desktop\\img\\test_car\\{no:D2}.jpg";
+                Mat img = Cv2.ImRead(frame);
+                if (img.Empty())
+                {
+                    Console.WriteLine($"{frame}가 없습니다.");
+                    continue;
+                }
+                Mat gray = new Mat();
+                Mat sobel = new Mat();
+                Mat th_img = new Mat();
+                Mat morph = new Mat();
+                Mat kerne = new Mat(5,25,MatType.CV_8UC1,Scalar.All(0));
+                Cv2.CvtColor(img, gray, ColorConversionCodes.BGR2GRAY);
+
+                Cv2.Blur(gray, gray, new Size(5, 5));
+                Cv2.Sobel(gray, gray, MatType.CV_8U, 1, 0, 3);
+
+                Cv2.Threshold(gray, th_img, 120, 255, ThresholdTypes.Binary);
+                Cv2.MorphologyEx(th_img, morph, MorphTypes.Close, kerne);
+
+                Cv2.ImShow("img", img);
+                Cv2.ImShow("th_img", th_img);
+                Cv2.WaitKey();
+            }
+        }
+    }
+}
