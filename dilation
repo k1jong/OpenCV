@@ -1,0 +1,67 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Erosion
+{
+    internal class Program
+    {
+        static bool Check_match(Mat img, Point start, Mat mask, bool mode = false)
+        {
+            for(int u=0;u<mask.Rows;u++)
+            {
+                for(int v = 0; v < mask.Cols; v++)
+                {
+                    Point pt = new Point(v, u);
+                    int m = mask.At<byte>(pt.Y,pt.X);
+                    int p = img.At<byte>(start.Y+pt.Y, start.X + pt.X);
+
+                    bool ch = (p == 255);
+                    if(m==1 && ch == mode)
+                        return false;
+                }
+            }
+            return true;
+        }
+        static void dilation(Mat img, out Mat dst,Mat mask)
+        {
+            dst = new Mat(img.Size(), MatType.CV_8U, Scalar.All(0));
+            if(mask.Empty()) mask = new Mat(3,3,MatType.CV_8UC1,Scalar.All(0));
+
+            Point h_m = new Point(mask.Cols/2,mask.Rows/2);
+            for(int i = h_m.Y; i < img.Rows- h_m.Y; i++)
+            {
+                for(int j = h_m.X; j < img.Cols- h_m.X; j++)
+                {
+                    Point start = new Point(j, i) - h_m;
+                    bool check = Check_match(img, start, mask);
+                    dst.Set<byte>(i, j, check ? (byte)0 : (byte)255);
+                }
+            }
+        }
+        static void Main(string[] args)
+        {
+            Mat img = Cv2.ImRead("C:\\Users\\Admin\\Desktop\\img\\13.jpg");
+            Mat th_img =new Mat(), dst1 = new Mat(), dst2 = new Mat();
+            Cv2.Threshold(img, th_img, 128, 255, ThresholdTypes.Binary);
+            Mat mask = new Mat(3, 3, MatType.CV_8UC1, new byte[]
+            {
+                0,1,0,
+                1,1,1,
+                0,1,1
+            });
+
+            dilation(th_img,out dst1, (Mat)mask);
+            Cv2.MorphologyEx(th_img, dst2, MorphTypes.Dilate, mask);
+
+            Cv2.ImShow("img", img);
+            Cv2.ImShow("dst1", dst1);
+            Cv2.ImShow("dst2", dst2);
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
