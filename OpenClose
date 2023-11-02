@@ -1,0 +1,99 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Erosion
+{
+    internal class Program
+    {
+        static bool Check_match(Mat img, Point start, Mat mask, bool mode = false)
+        {
+            for(int u=0;u<mask.Rows;u++)
+            {
+                for(int v = 0; v < mask.Cols; v++)
+                {
+                    Point pt = new Point(v, u);
+                    int m = mask.At<byte>(pt.Y,pt.X);
+                    int p = img.At<byte>(start.Y+pt.Y, start.X + pt.X);
+
+                    bool ch = (p == 255);
+                    if(m==1 && ch == mode)
+                        return false;
+                }
+            }
+            return true;
+        }
+        static void dilation(Mat img, out Mat dst,Mat mask)
+        {
+            dst = new Mat(img.Size(), MatType.CV_8U, Scalar.All(0));
+            if(mask.Empty()) mask = new Mat(3,3,MatType.CV_8UC1,Scalar.All(0));
+
+            Point h_m = new Point(mask.Cols/2,mask.Rows/2);
+            for(int i = h_m.Y; i < img.Rows- h_m.Y; i++)
+            {
+                for(int j = h_m.X; j < img.Cols- h_m.X; j++)
+                {
+                    Point start = new Point(j, i) - h_m;
+                    bool check = Check_match(img, start, mask);
+                    dst.Set<byte>(i, j, check ? (byte)0 : (byte)255);
+                }
+            }
+        }
+        static void erosion(Mat img, out Mat dst, Mat mask)
+        {
+            dst = new Mat(img.Size(), MatType.CV_8U, Scalar.All(0));
+            if (mask.Empty()) mask = new Mat(3, 3, MatType.CV_8UC1, Scalar.All(0));
+
+            Point h_m = new Point(mask.Cols / 2, mask.Rows / 2);
+            for (int i = h_m.Y; i < img.Rows - h_m.Y; i++)
+            {
+                for (int j = h_m.X; j < img.Cols - h_m.X; j++)
+                {
+                    Point start = new Point(j, i) - h_m;
+                    bool check = Check_match(img, start, mask, false);
+                    dst.Set<byte>(i, j, check ? (byte)255 : (byte)0);
+                }
+            }
+        }
+        static void Opening(Mat img,out Mat dst,Mat mask)
+        {
+            Mat tmp;
+            erosion(img, out tmp, mask);
+            dilation(tmp,out dst,mask);
+        }
+        static void closing(Mat img, out Mat dst,Mat mask)
+        {
+            Mat tmp;
+            dilation(img, out tmp, mask);
+            erosion(tmp, out dst, mask);
+        }
+        static void Main(string[] args)
+        {
+            Mat img = Cv2.ImRead("C:\\Users\\Admin\\Desktop\\img\\13.jpg");
+            Mat th_img =new Mat(), dst1 = new Mat(), dst2 = new Mat(),dst3 = new Mat(),dst4 = new Mat();
+            Cv2.Threshold(img, th_img, 128, 255, ThresholdTypes.Binary);
+            Mat mask = new Mat(3, 3, MatType.CV_8UC1, new byte[]
+            {
+                0,1,0,
+                1,1,1,
+                0,1,1
+            });
+
+            Opening(th_img, out dst1, mask);
+            closing(th_img, out dst2, mask);
+            Cv2.MorphologyEx(th_img, dst3, MorphTypes.Open, mask);
+            Cv2.MorphologyEx(th_img,dst4,MorphTypes.Close, mask);
+
+            Cv2.ImShow("img", img);
+            Cv2.ImShow("dst1", dst1);
+            Cv2.ImShow("dst2", dst2);
+            Cv2.ImShow("dst3", dst3);
+            Cv2.ImShow("dst4", dst4);
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
